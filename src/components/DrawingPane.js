@@ -1,49 +1,77 @@
 "use client"
-import {useState, useEffect, useRef} from "react"
+import { useState, useEffect, useRef } from "react"
+import gsap from "gsap"
 
 export default function DrawingPane() {
   const canvasRef = useRef(null)
   const [isDrawing, setIsDrawing] = useState(false)
+  const [opacity, setOpacity] = useState(1)
+  const [lineWidth, setLineWidth] = useState(40) // Set initial line width
+
+  const handleMouseDown = (event) => {
+    setIsDrawing(true)
+    setOpacity(1)
+    setLineWidth(40) // Reset line width on new stroke
+    const context = canvasRef.current.getContext("2d")
+    context.beginPath()
+    context.moveTo(event.clientX, event.clientY)
+  }
+
+  const handleMouseMove = (event) => {
+    if (!isDrawing) return
+    const context = canvasRef.current.getContext("2d")
+    context.lineWidth = lineWidth
+    context.lineTo(event.clientX, event.clientY)
+    context.stroke()
+    setLineWidth((width) => Math.max(width - 0.5, 1)) // Gradually decrease line width
+    setOpacity((opacity) => Math.max(opacity - 0.01, 0)) // decrease opacity
+    context.strokeStyle = `rgba(255, 255, 255, ${opacity})` // update stroke color with new opacity
+  }
+
+  const handleMouseUp = () => {
+    setIsDrawing(false)
+    const canvas = canvasRef.current
+    gsap.to(canvas, {
+      duration: 0.5,
+      alpha: 0,
+      onComplete: () => {
+        const context = canvas.getContext("2d")
+        context.clearRect(0, 0, canvas.width, canvas.height)
+        gsap.to(canvas, { duration: 0.5, alpha: 1 })
+      },
+    })
+  }
 
   useEffect(() => {
     const canvas = canvasRef.current
     const context = canvas.getContext("2d")
-    context.strokeStyle = "rgba(255, 255, 255, 1)" // set stroke color to white with 50% transparency
-    context.lineWidth = 20
+    context.strokeStyle = `rgba(255, 255, 255, ${opacity})` // set stroke color to white with variable transparency
     context.lineCap = "round"
     context.lineJoin = "round"
     context.imageSmoothingEnabled = false // disable anti-aliasing
 
-    function handleMouseDown(event) {
-      setIsDrawing(true)
-      context.beginPath()
-      context.moveTo(event.clientX, event.clientY)
-    }
+    const eventHandlers = [
+      ["mousedown", handleMouseDown],
+      ["mousemove", handleMouseMove],
+      ["mouseup", handleMouseUp],
+    ]
 
-    function handleMouseMove(event) {
-      if (isDrawing) {
-        context.lineTo(event.clientX, event.clientY)
-        context.stroke()
-      }
-    }
-
-    function handleMouseUp() {
-      setIsDrawing(false)
-      setTimeout(() => {
-        context.clearRect(0, 0, canvas.width, canvas.height)
-      }, 500)
-    }
-
-    canvas.addEventListener("mousedown", handleMouseDown)
-    canvas.addEventListener("mousemove", handleMouseMove)
-    canvas.addEventListener("mouseup", handleMouseUp)
+    eventHandlers.forEach(([event, handler]) => {
+      canvas.addEventListener(event, handler)
+    })
 
     return () => {
-      canvas.removeEventListener("mousedown", handleMouseDown)
-      canvas.removeEventListener("mousemove", handleMouseMove)
-      canvas.removeEventListener("mouseup", handleMouseUp)
+      eventHandlers.forEach(([event, handler]) => {
+        canvas.removeEventListener(event, handler)
+      })
     }
-  }, [isDrawing])
+  }, [isDrawing, opacity, lineWidth]) // Add lineWidth to dependency array
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
+  }, [])
 
   return (
     <>
@@ -57,8 +85,6 @@ export default function DrawingPane() {
           position: "relative",
           zIndex: 1,
         }}
-        width={window.innerWidth}
-        height={window.innerHeight}
       />
 
       <div
