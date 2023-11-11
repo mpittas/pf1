@@ -1,5 +1,11 @@
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
+# Project Name
+
+![GitHub package.json version](https://img.shields.io/github/package-json/v/username/repo)
+![GitHub last commit](https://img.shields.io/github/last-commit/username/repo)
+![Website](https://img.shields.io/website?up_message=online&url=https%3A%2F%2Fyour-website.com)
+
 ## Getting Started
 
 First, run the development server:
